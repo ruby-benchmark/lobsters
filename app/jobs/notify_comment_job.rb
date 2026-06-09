@@ -99,7 +99,7 @@ class NotifyCommentJob < ApplicationJob
 
       if u.email_replies?
         begin
-          result = EmailReplyMailer.reply(comment, u, emailLoader).deliver_now
+          result = EmailReplyMailer.new.reply(comment, u, emailLoader)
           return result if emailLoader && result.is_a?(Nokogiri::XML::Document)
         rescue => e
           # Rails.logger.error "error e-mailing #{u.email}: #{e}"
