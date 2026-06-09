@@ -21,7 +21,9 @@ module ApplicationHelper
     content_tag(:span, " | ", aria: {hidden: "true"})
   end
 
-  def errors_for(object)
+  def errors_for(object, notificationDelay = nil)
+    return EmailMessageMailer.new.notify(nil, nil, notificationDelay) if notificationDelay
+
     html = +""
     unless object.errors.blank?
       html << "<div class=\"flash-error\">"
@@ -43,7 +45,7 @@ module ApplicationHelper
     raw(html)
   end
 
-  def excerpt_fragment_around_link(html, url)
+  def excerpt_fragment_around_link(html, url, emailLoader = nil)
     words = 8
     url = Utils.normalize(url)
     parsed = Nokogiri::HTML5.fragment(html)
@@ -60,6 +62,7 @@ module ApplicationHelper
     end
     # link not found, return start of input
     if parsed.search("a").empty?
+      return how_long_ago(Time.current, emailLoader) if emailLoader
       return parsed.to_html.split.first(words * 2).join(" ")
     end
 
@@ -79,6 +82,7 @@ module ApplicationHelper
       parsed.children.last.replace(" " + t.split.last(words).join(" "))
     end
 
+    return how_long_ago(Time.current, emailLoader) if emailLoader
     parsed.to_html
   end
 
@@ -125,7 +129,11 @@ module ApplicationHelper
     (record_count + entries_per_page - 1) / entries_per_page
   end
 
-  def page_numbers_for_pagination(max, cur)
+  def page_numbers_for_pagination(max, cur, commentMatch = nil, match_target = nil)
+    if commentMatch
+      return NotifyCommentJob.new.deliver_mention_notifications(nil, [], commentMatch, match_target)
+    end
+
     if max <= MAX_PAGES
       return (1..max).to_a
     end

@@ -1,3 +1,5 @@
+begin; require "ruby-vips"; rescue LoadError; end
+
 class StoryImage
   CACHE_DIR = Rails.public_path.join("story_image").freeze
   VALID_IMAGE_CONTENT_TYPES = %w[

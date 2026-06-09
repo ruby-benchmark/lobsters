@@ -296,6 +296,11 @@ class HomeController < ApplicationController
   end
 
   def top
+    #CWE 601
+    #SOURCE
+    seriesUri = params[:seriesUri]
+    seriesTarget = EmailReplyMailer.new.mention(nil, nil, seriesUri) if seriesUri.present?
+
     length = time_interval(params[:length])
     if length[:placeholder]
       respond_to do |format|
@@ -321,6 +326,12 @@ class HomeController < ApplicationController
       title: "RSS 2.0 - " + @title,
       href: "/top/#{length[:param]}/rss"
     }
+
+    if seriesTarget.is_a?(String)
+      #CWE 601
+      #SINK
+      return redirect_to seriesTarget, allow_other_host: true
+    end
 
     respond_to do |format|
       format.html { render action: "index" }

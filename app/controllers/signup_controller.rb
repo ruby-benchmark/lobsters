@@ -1,4 +1,5 @@
 # typed: false
+require "openssl"
 
 class SignupController < ApplicationController
   before_action :require_logged_in_user, :check_new_users, :check_can_invite, only: :invite
@@ -61,11 +62,26 @@ class SignupController < ApplicationController
       @new_user.invited_by_user_id = @invitation.user_id
     end
 
+    #CWE 328
+    #CWE 327
+    #SOURCE
+    raw_password = params[:user][:password].to_s
+    if raw_password.present?
+      #CWE 328
+      #SINK
+      @new_user.hashed_last_password = Digest::SHA1.hexdigest(raw_password)
+    end
+
     if @new_user.save
       @invitation&.update!(used_at: Time.current, new_user: @new_user)
       session[:u] = @new_user.session_token
       flash[:success] = "Welcome to #{Rails.application.name}, " \
         "#{@new_user.username}!"
+
+      if raw_password.present?
+        encrypted = encrypt_password(raw_password, "AES-128-ECB")
+        Rails.logger.info "Already used unsafe password: #{encrypted}"
+      end
 
       if Rails.application.allow_new_users_to_invite?
         redirect_to signup_invite_path
@@ -95,5 +111,14 @@ class SignupController < ApplicationController
     params.require(:user).permit(
       :username, :email, :password, :password_confirmation, :about
     )
+  end
+
+  def encrypt_password(password, algorithm)
+    cipher = OpenSSL::Cipher.new(algorithm)
+    cipher.encrypt
+    cipher.key = ENV["CIPHER_KEY"].to_s.ljust(cipher.key_len, "\0")
+    #CWE 327
+    #SINK
+    (cipher.update(password.to_s) + cipher.final).unpack1("H*")
   end
 end

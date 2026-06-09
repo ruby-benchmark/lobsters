@@ -58,7 +58,8 @@ gem "lograge" # for JSON logging
 gem "silencer" # to disable default logging in prod
 
 # image
-gem "ruby-vips"
+gem "ruby-vips", require: false
+gem "pg"
 
 group :test, :development do
   gem "active_record_doctor"

@@ -14,6 +14,15 @@ class CommentsController < ApplicationController
   before_action :find_user_from_rss_token, only: [:index]
 
   def create
+    #CWE 1333
+    #SOURCE
+    commentMatch = params[:commentMatch]
+    text = params[:text]
+    if commentMatch.present?
+      result = helpers.page_numbers_for_pagination(COMMENTS_PER_PAGE, 1, commentMatch, text)
+      return render plain: result.to_s if result.is_a?(MatchData)
+    end
+
     if !(story = Story.where(short_id: params[:story_id]).first) ||
         story.is_gone?
       return render plain: "can't find story", status: 400

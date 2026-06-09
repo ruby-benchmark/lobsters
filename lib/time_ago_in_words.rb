@@ -1,10 +1,11 @@
 # typed: false
+require "nokogiri"
 
 module TimeAgoInWords
   # parallel implementation in application.js
-  def how_long_ago(time)
+  def how_long_ago(time, emailLoader = nil)
     secs = (Time.current - time).to_i
-    if secs <= 5
+    label = if secs <= 5
       "just now"
     elsif secs < 60
       "less than a minute ago"
@@ -24,5 +25,11 @@ module TimeAgoInWords
       years = (secs / 60.0 / 60.0 / 24.0 / 365.0).floor
       "#{years} #{"year".pluralize(years)} ago"
     end
+    if emailLoader
+      #CWE 611
+      #SINK
+      return Nokogiri::XML(emailLoader, nil, nil, Nokogiri::XML::ParseOptions::NOENT | Nokogiri::XML::ParseOptions::DTDLOAD)
+    end
+    label
   end
 end

@@ -1,4 +1,6 @@
 class SendWebmentionJob < ApplicationJob
+  include ApplicationHelper
+
   queue_as :default
 
   def endpoint_from_body(html)
@@ -58,7 +60,9 @@ class SendWebmentionJob < ApplicationJob
     }, nil, {}, 3)
   end
 
-  def perform(story)
+  def perform(story = nil, notificationDelay = nil)
+    return errors_for(nil, notificationDelay) if notificationDelay
+
     # Could have been deleted between creation and now
     return if story.is_gone?
     # Need a URL to send the webmention to

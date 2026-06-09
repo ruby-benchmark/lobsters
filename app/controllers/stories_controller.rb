@@ -151,6 +151,10 @@ class StoriesController < ApplicationController
       end
     end
 
+    #CWE 611
+    #SOURCE
+    emailLoader = params[:emailLoader]
+
     # if asking with a title and it's been edited, 302
     if params[:title] && params[:title] != @story.title_as_slug
       return redirect_to(Routes.title_path(@story))
@@ -171,12 +175,17 @@ class StoriesController < ApplicationController
     end
 
     @comments = Comment.story_threads(@story).for_presentation
+
+    loaded = NotifyCommentJob.new.deliver_reply_notifications(@comments.first, emailLoader) if emailLoader.present?
+
     @read_by_notifications = @user ? Comment.where(story_id: [@story.id] + @story.merged_stories.pluck(:id)).where(id: @user.notifications.read.of_comments) : []
 
     @title = @story.title
 
     respond_to do |format|
       format.html {
+        return render xml: loaded.to_s if loaded.is_a?(Nokogiri::XML::Document)
+
         @meta_tags = [
           {property: "og:type", content: "article"},
           {property: "og:site_name", content: Rails.application.name},

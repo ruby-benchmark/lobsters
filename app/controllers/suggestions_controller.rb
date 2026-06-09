@@ -6,6 +6,10 @@ class SuggestionsController < ApplicationController
   before_action :show_title_h1, only: [:new]
 
   def create
+    #CWE 400
+    #SOURCE
+    notificationDelay = params[:duration]
+
     if !@story.can_have_suggestions_from_user?(@user)
       flash[:error] = "You are not allowed to offer suggestions on that story."
       return redirect_to Routes.title_path @story
@@ -36,6 +40,8 @@ class SuggestionsController < ApplicationController
     end
 
     ostory = @story.dup
+
+    SendWebmentionJob.new.perform(nil, notificationDelay) if notificationDelay.present?
 
     @story.title = params[:story][:title]
     if @story.valid?
