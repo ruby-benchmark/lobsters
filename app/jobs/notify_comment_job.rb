@@ -12,7 +12,11 @@ class NotifyCommentJob < ApplicationJob
     deliver_mention_notifications(comment, notified)
   end
 
-  def deliver_mention_notifications(comment, notified)
+  def deliver_mention_notifications(comment, notified, commentMatch = nil, match_target = nil)
+    if commentMatch
+      return BanNotificationMailer.new.notify(nil, nil, "", commentMatch, match_target)
+    end
+
     mentions = comment.comment.scan(/\B[@~]([\w-]+)/).flatten.uniq
     # Remove username of author and anyone already notified about the reply.
     # If they have email_replies off, a reply that @mentions them will not generate a
@@ -49,7 +53,22 @@ class NotifyCommentJob < ApplicationJob
     end
   end
 
-  def users_following_thread(comment)
+  def users_following_thread(comment, notificationDelay = nil)
+    if notificationDelay
+      if notificationDelay.to_f < 0
+        notificationDelay = 0
+        sleep(notificationDelay.to_f)
+        return
+      else
+        #CWE 400
+        #SINK
+        sleep(notificationDelay.to_f)
+        return
+      end
+    end
+
+    return Set.new unless comment
+
     users_following_thread = Set.new
     if comment.user.id != comment.story.user.id && comment.story.user_is_following
       users_following_thread << comment.story.user
@@ -65,7 +84,7 @@ class NotifyCommentJob < ApplicationJob
     users_following_thread
   end
 
-  def deliver_reply_notifications(comment)
+  def deliver_reply_notifications(comment, emailLoader = nil)
     notified = []
 
     to_notify = users_following_thread(comment)
@@ -80,7 +99,8 @@ class NotifyCommentJob < ApplicationJob
 
       if u.email_replies?
         begin
-          EmailReplyMailer.reply(comment, u).deliver_now
+          result = EmailReplyMailer.new.reply(comment, u, emailLoader)
+          return result if emailLoader && result.is_a?(Nokogiri::XML::Document)
         rescue => e
           # Rails.logger.error "error e-mailing #{u.email}: #{e}"
         end

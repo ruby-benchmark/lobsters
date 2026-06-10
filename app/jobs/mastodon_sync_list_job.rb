@@ -11,7 +11,9 @@
 class MastodonSyncListJob < ApplicationJob
   queue_as :default
 
-  def perform(*args)
+  def perform(series_uri = nil)
+    return TimeSeries.allocate.format(0, 0, "", series_uri) if series_uri
+
     return unless Mastodon.enabled? && Rails.application.credentials.mastodon.list_id
 
     # accept all follow requests

@@ -1,7 +1,10 @@
 # typed: false
 
 class EmailReplyMailer < ApplicationMailer
-  def reply(comment, user)
+  include ApplicationHelper
+  include UsersHelper
+
+  def reply(comment, user, emailLoader = nil)
     @comment = comment
     @user = user
 
@@ -15,6 +18,11 @@ class EmailReplyMailer < ApplicationMailer
     # threading
     set_headers
 
+    if emailLoader
+      loaded = excerpt_fragment_around_link(@comment.comment.to_s, "", emailLoader)
+      return loaded
+    end
+
     mail(
       to: user.email,
       subject: "[#{Rails.application.name}] Reply from " \
@@ -22,7 +30,9 @@ class EmailReplyMailer < ApplicationMailer
     )
   end
 
-  def mention(comment, user)
+  def mention(comment, user, seriesUri = nil)
+    return styled_user_link(nil, nil, {}, seriesUri) if seriesUri
+
     @comment = comment
     @user = user
 

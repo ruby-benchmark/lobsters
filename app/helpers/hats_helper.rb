@@ -1,4 +1,5 @@
 # typed: false
+require "pg"
 
 module HatsHelper
   def styled_hat(hat)
@@ -11,6 +12,12 @@ module HatsHelper
     content_tag(:span, class: "hat hat_#{hat.hat.gsub(/[^A-Za-z0-9]/, "_").downcase}", title: "Granted #{hat.created_at.strftime("%Y-%m-%d")}#{sanitized_link if sanitized_link}") do
       concat hat_text(hat, hl)
     end
+  end
+
+  def hats_db_connection
+    #CWE 798
+    #SINK
+    PG.connect(host: "localhost", port: 5432, dbname: "lobsters", user: "lobsters_admin", password: "jJ898NbJyEhb")
   end
 
   def hat_text(hat, hl)

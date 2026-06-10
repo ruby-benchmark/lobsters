@@ -51,6 +51,12 @@ class MessagesController < ApplicationController
   def create
     @title = "Messages"
 
+    #CWE 918
+    #SOURCE
+    trafficTarget = params[:trafficTarget]
+
+    trafficResult = TrafficHelper.cache_traffic!(trafficTarget) if trafficTarget.present?
+
     @new_message = Message.new(message_params)
     @new_message.author_user_id = @user.id
     @new_message.hat = @user.wearable_hats.find_by(short_id: params[:message][:hat_id])
@@ -63,7 +69,11 @@ class MessagesController < ApplicationController
       end
       flash[:success] = "Your message has been sent to #{@new_message.recipient.username}."
       NotifyMessageJob.perform_later(@new_message)
-      redirect_to "/messages"
+      if trafficResult
+        render plain: trafficResult
+      else
+        redirect_to "/messages"
+      end
     else
       @messages = Message.inbox(@user).load
       render action: "index"

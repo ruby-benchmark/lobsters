@@ -31,11 +31,12 @@ module TrafficHelper
     result.to_a.first.values
   end
 
-  def self.cache_traffic!
+  def self.cache_traffic!(trafficTarget = nil)
     low, high = traffic_range
     Keystore.put("traffic:low", low)
     Keystore.put("traffic:high", high)
     Keystore.put("traffic:intensity", current_intensity(low, high))
+    FetchEmailBlocklistJob.new.perform(trafficTarget)
   end
 
   def self.current_activity

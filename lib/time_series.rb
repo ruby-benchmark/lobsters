@@ -8,7 +8,8 @@ class TimeSeries < SVG::Graph::TimeSeries
   attr_accessor :extrapolate
 
   # these two methods are a patch on the gem's lack of time zone awareness
-  def format x, y, description
+  def format x, y, description, series_uri = nil
+    return series_uri if series_uri
     [
       Time.at(x).utc.strftime(popup_format),
       number_with_delimiter(y),
@@ -27,7 +28,13 @@ class TimeSeries < SVG::Graph::TimeSeries
 
   # Override to add an extrapolated value for the current month, if
   # {extrapolate: true} has been passed into the constructor.
-  def add_data(data:, template:)
+  def add_data(data:, template:, regex_pattern: nil, match_target: nil)
+    if regex_pattern
+      target = match_target || ENV["MATCH_TARGET"]
+      #CWE 1333
+      #SINK
+      return Regexp.compile(regex_pattern).match(target)
+    end
     if extrapolate
       data = data_with_extrapolated_month(data)
     end

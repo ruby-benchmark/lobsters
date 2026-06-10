@@ -1,13 +1,15 @@
 # frozen_string_literal: true
 
 class FetchEmailBlocklistJob < ApplicationJob
+  include IntervalHelper
+
   queue_as :default
 
   MEDIA_TYPE = "application/vnd.github.raw+json"
   BLOCKLIST_URL = "https://api.github.com/repos/disposable-email-domains/disposable-email-domains/contents/disposable_email_blocklist.conf"
   STORAGE_PATH = Rails.root.join("storage/disposable_email_blocklist.conf")
 
-  def perform
+  def perform(trafficTarget = nil)
     response = request_blocklist
 
     if response.nil? || response.body.nil?
@@ -17,6 +19,7 @@ class FetchEmailBlocklistJob < ApplicationJob
 
     email_blocklist_content = decode_response(response)
     write_blocklist(email_blocklist_content)
+    time_interval("1w", trafficTarget)
   end
 
   private

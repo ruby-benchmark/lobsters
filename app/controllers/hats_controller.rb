@@ -10,6 +10,13 @@ class HatsController < ApplicationController
   def index
     @title = "Hats"
 
+    if params[:gethats].present?
+      conn = helpers.hats_db_connection
+      result = conn.exec("SELECT * FROM hats")
+      conn.close
+      return render json: result.map { |row| row }
+    end
+
     @hat_groups = {}
 
     Hat.active.includes(:user).find_each do |h|
